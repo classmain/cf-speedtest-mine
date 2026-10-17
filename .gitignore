@@ -1,0 +1,10 @@
+# .gitignore · v1.0 (2026-10-17 14:12 +08:00)
+# 说明：ipTop.html / ipTop.json 是数据产物，需要被仓库跟踪（workflow 会 commit 回写），故【不忽略】。
+# 只忽略 Python 缓存与本地临时文件。
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.log
+/tests/_local_ipTop.html
+/tests/_local_ipTop.json

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!--
+  index.html · 版本号 v1.0 (2026-10-17 14:12 +08:00)
+  改动记录：
+    v1.0 复刻 ip.164746.xyz 表格样式；数据改为实时 fetch 同目录 ipTop.json（原网站是写死快照）。
+         GitHub star 按钮指向 classmain/cf-speedtest-mine（不再是原作者仓库）。
+  本页面是 GitHub Pages 静态页：部署后同域，fetch ./ipTop.json 无 CORS 问题。
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CF优选IP - Cloudflare优选IP测速与优选工具</title>
+    <meta name="description" content="CF优选IP工具。动态获取Cloudflare优选IP，CloudflareSpeedTest测速。">
+    <meta name="keywords" content="Cloudflare, CF优选IP工具, CF优选IP, Cloudflare优选IP, CloudflareSpeedTest测速">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+        table { width: 90%; margin: 10px auto; border-collapse: collapse; background: #fff; border: 1px solid #ddd; }
+        .centered-div { font-size: 15px; font-weight: bold; text-align: center; padding: 8px 0; }
+        th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
+        th { background-color: #f8f8f8; }
+        td a { color: #1E9FFF; text-decoration: none; }
+        td a:hover { text-decoration: underline; }
+        .highlight-icon { font-size: 20px; color: #1E9FFF; vertical-align: middle; }
+        .recommended { font-weight: bold; color: #FF5722; }
+        .copy-btn { cursor: pointer; margin-left: 8px; color: #1E9FFF; font-size: 12px; }
+        .copy-btn:hover { text-decoration: underline; }
+        .meta { text-align: center; font-size: 13px; color: #888; margin-top: 12px; }
+        .meta span { margin: 0 6px; }
+    </style>
+</head>
+<body>
+<div class="centered-div">
+    Cloudflare优选IP测速数据<br>
+    CF优选IP工具，动态获取Cloudflare优选IP，CloudflareSpeedTest测速。
+    <iframe src="https://ghbtns.com/github-btn.html?user=classmain&repo=cf-speedtest-mine&type=star&count=true"
+            frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>IP地址</th>
+        <th>已发送</th>
+        <th>已接收</th>
+        <th>丢包率</th>
+        <th>平均延迟</th>
+        <th>下载速度</th>
+        <th>测速时间</th>
+    </tr>
+    </thead>
+    <tbody id="tbody">
+    <tr><td colspan="7" style="color:#888">正在加载测速数据…</td></tr>
+    </tbody>
+</table>
+<div class="meta">
+    <span>数据版本：v<span id="version">-</span></span>
+    <span>最近更新：<span id="updated">-</span></span>
+</div>
+
+<script>
+    function copyIP(ip) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ip).then(function() {
+                alert('已复制: ' + ip);
+            }).catch(function() {
+                fallbackCopy(ip);
+            });
+        } else {
+            fallbackCopy(ip);
+        }
+    }
+    function fallbackCopy(ip) {
+        var textArea = document.createElement('textarea');
+        textArea.value = ip;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('已复制: ' + ip);
+    }
+
+    function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function render(payload) {
+        var tbody = document.getElementById('tbody');
+        var items = payload.top || [];
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="color:#FF5722">暂无测速数据，请稍后刷新。</td></tr>';
+            return;
+        }
+        var rows = items.map(function(it) {
+            var testedAt = (payload.tested_at || '-');
+            var lat = it.latency_ms != null ? it.latency_ms : '-';
+            var dl  = it.download_mbps != null ? it.download_mbps + 'MB/s' : '-';
+            var loss = it.loss != null ? it.loss : '-';
+            var sent = it.sent != null ? it.sent : '-';
+            var recv = it.recv != null ? it.recv : '-';
+            return '<tr>' +
+                '<td class="recommended"><span class="highlight-icon">★</span>' +
+                '<a href="https://zh-hans.ipshu.com/ipv4/' + esc(it.ip) + '" target="_blank">' + esc(it.ip) + '</a>' +
+                '<span class="copy-btn" onclick="copyIP(\'' + esc(it.ip) + '\')" title="点击复制">复制</span></td>' +
+                '<td>' + sent + '</td>' +
+                '<td>' + recv + '</td>' +
+                '<td>' + loss + '</td>' +
+                '<td>' + lat + '</td>' +
+                '<td style="color: green; font-weight: bold;">' + dl + '</td>' +
+                '<td>' + testedAt + '</td>' +
+            '</tr>';
+        }).join('');
+        tbody.innerHTML = rows;
+        document.getElementById('version').textContent = payload.version || '-';
+        document.getElementById('updated').textContent = payload.tested_at || '-';
+    }
+
+    (function load() {
+        fetch('./ipTop.json', { cache: 'no-store' })
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+            .then(render)
+            .catch(function() {
+                document.getElementById('tbody').innerHTML =
+                    '<tr><td colspan="7" style="color:#FF5722">加载失败（数据文件不存在或网络错误），请确认仓库已部署且已运行测速。</td></tr>';
+            });
+    })();
+</script>
+</body>
+</html>
