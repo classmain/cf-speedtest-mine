@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # ============================================================================
-# nas_speedtest.py · 自包含版 · 版本号 v1.4.0 (2026-10-17 19:16 +08:00)
+# nas_speedtest.py · 自包含版 · 版本号 v1.4.1 (2026-10-17 19:16 +08:00)
 # 改动记录：
+#   v1.4.1 修时区 bug：时间戳固定按北京时间(UTC+8)输出，不再受容器/宿主时区影响
+#        （python:slim 容器默认 UTC，之前北京时间 19:59 被显示成 11:59）。
 #   v1.4.0 自包含：IP 池内联、测速 + GitHub REST 推送合并为一个文件，
 #        飞牛 crontab 每小时跑一次即可，无需 git、无需 fnpack、无常驻进程。
 #
@@ -30,7 +32,7 @@ import time
 import urllib.request
 import urllib.error
 
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 SNI = "speed.cloudflare.com"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -132,7 +134,8 @@ def build(top_n):
         r["recv"] = 4
         r["loss"] = "0.00%"
     final = results[:top_n]
-    tested_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    # 固定按北京时间(UTC+8)输出，容器/宿主时区不影响
+    tested_at = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 8 * 3600))
     html = ",".join(r["ip"] for r in final)
     payload = {"version": VERSION, "tested_at": tested_at, "count": len(final), "top": final}
     return html, json.dumps(payload, ensure_ascii=False, indent=2), payload
@@ -184,7 +187,7 @@ def main():
     r2 = push_file(repo, token, "ipTop.json", js)
     print(json.dumps({
         "version": VERSION,
-        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "time": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 8 * 3600)),
         "repo": repo,
         "top": [t.get("ip") for t in payload["top"]],
         "tested_at": payload["tested_at"],
