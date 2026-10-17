@@ -1,0 +1,24 @@
+# ============================================================================
+# cf-speedtest · 飞牛 fnOS 原生应用 manifest · 版本号 v1.3.0 (2026-10-17 18:40 +08:00)
+# 改动记录：
+#   v1.3.0 修正为官方合法 manifest 键（此前误写了 main_script/resource/privilege 等非 manifest 键，已删）。
+# 说明：native 后台应用——不注册桌面 Web 入口、不开服务端口；应用中心显示「启动/停止」卡片。
+# 生命周期脚本/资源/权限/向导放在各自文件，由 fnpack 按目录约定自动识别，不写进 manifest。
+# ============================================================================
+
+appname=cf-speedtest
+version=1.3.0
+display_name=CF优选IP测速
+desc=在飞牛上定时测速 Cloudflare 优选 IP，推送到 GitHub Pages，网页实时显示大陆最优 IP。
+source=thirdparty
+platform=x86
+maintainer=classmain
+
+# 后台应用：不监听端口 → 不检查端口；允许用户启停
+checkport=false
+ctl_stop=true
+
+# 最低支持版本（按实际测试填；不确定可先写宽一点）
+os_min_version=1.0.0
+
+changelog=v1.3.0 首个飞牛原生应用：常驻 runner 定时测速并推送 GitHub。

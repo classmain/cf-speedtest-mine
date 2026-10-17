@@ -1,0 +1,48 @@
+[
+  {
+    "stepTitle": "配置推送",
+    "items": [
+      {
+        "type": "tips",
+        "field": "wizard_tips",
+        "label": "说明",
+        "initValue": "本应用会定时测速 Cloudflare 优选 IP，并推送到你的 GitHub 仓库，刷新网页。请填写一个能对该仓库写的 GitHub token（建议 fine-grained，勾 Contents: Read and write）。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_repo",
+        "label": "GitHub 仓库",
+        "initValue": "classmain/cf-speedtest-mine",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入 owner/repo"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_token",
+        "label": "GitHub Token",
+        "rules": [
+          {
+            "required": true,
+            "message": "请填写 token"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_interval",
+        "label": "测速间隔（小时）",
+        "initValue": "1",
+        "rules": [
+          {
+            "pattern": "^[1-9][0-9]?$",
+            "message": "填 1-24 的整数小时"
+          }
+        ]
+      }
+    ]
+  }
+]

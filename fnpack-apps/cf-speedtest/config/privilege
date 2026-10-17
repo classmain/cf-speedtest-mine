@@ -1,0 +1,7 @@
+{
+  "defaults": {
+    "run-as": "package"
+  },
+  "username": "cf_speedtest_user",
+  "groupname": "cf_speedtest_group"
+}

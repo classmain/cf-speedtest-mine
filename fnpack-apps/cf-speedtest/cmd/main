@@ -1,0 +1,123 @@
+#!/bin/bash
+# ============================================================================
+# cmd/main · 版本号 v1.3.0 (2026-10-17 18:40 +08:00)
+# 飞牛 fnOS 原生应用生命周期脚本：start / stop / status。
+# 常驻 runner.py：每小时测速 + 推 GitHub Pages。向导填的 token 存 TRIM_PKGETC/config.json。
+# ============================================================================
+
+APPDIR="${TRIM_APPDEST}"
+CONFDIR="${TRIM_PKGETC}"
+DATADIR="${TRIM_PKGVAR}"
+CONFIG="${CONFDIR}/config.json"
+PIDFILE="${DATADIR}/app.pid"
+LOGFILE="${DATADIR}/app.log"
+
+# 找 python3（飞牛原生应用常用自带运行时；这里用系统 python3）
+find_python() {
+    for p in /var/apps/python/target/bin/python3 /usr/bin/python3 python3; do
+        if command -v "$p" >/dev/null 2>&1; then
+            echo "$p"; return 0
+        fi
+    done
+    return 1
+}
+PY="$(find_python)"
+if [ -z "$PY" ]; then
+    echo "未找到 python3：请在飞牛安装 Python 运行时" > "$TRIM_TEMP_LOGFILE" 2>/dev/null || true
+    exit 1
+fi
+
+# 确保 config.json 存在（向导提交后把 token/repo/interval 写进来；此处兜底占位）
+ensure_config() {
+    if [ ! -f "$CONFIG" ]; then
+        mkdir -p "$CONFDIR"
+        cat > "$CONFIG" <<'JSON'
+{"repo":"classmain/cf-speedtest-mine","token":"","interval_hours":1}
+JSON
+    fi
+}
+
+# 把向导字段（wizard_ 前缀，无 TRIM_ 前缀）同步进 config.json（若提供）
+sync_wizard_config() {
+    [ -z "$wizard_token" ] && [ -z "$wizard_repo" ] && [ -z "$wizard_interval" ] && return 0
+    "$PY" - "$CONFIG" <<'PYEOF'
+import json,sys,os
+p=sys.argv[1]
+try:
+    c=json.load(open(p,encoding='utf-8'))
+except Exception:
+    c={}
+if os.environ.get('wizard_repo'): c['repo']=os.environ['wizard_repo'].strip()
+if os.environ.get('wizard_token'): c['token']=os.environ['wizard_token'].strip()
+if os.environ.get('wizard_interval'):
+    try: c['interval_hours']=int(os.environ['wizard_interval'])
+    except ValueError: pass
+json.dump(c,open(p,'w',encoding='utf-8'),ensure_ascii=False)
+PYEOF
+    chmod 600 "$CONFIG" 2>/dev/null || true
+}
+
+status_app() {
+    if [ -f "$PIDFILE" ]; then
+        local pid
+        pid="$(head -n 1 "$PIDFILE" | tr -d '[:space:]')"
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        fi
+        rm -f "$PIDFILE"
+    fi
+    return 1
+}
+
+start_app() {
+    ensure_config
+    sync_wizard_config
+    if status_app; then
+        return 0
+    fi
+    echo "[$(date '+%F %T')] starting runner" >> "$LOGFILE"
+    CFG_FILE="$CONFIG" DATA_DIR="$DATADIR" "$PY" "$APPDIR/app/runner.py" \
+        --config "$CONFIG" --data "$DATADIR" >> "$LOGFILE" 2>&1 &
+    echo "$!" > "$PIDFILE"
+    return 0
+}
+
+stop_app() {
+    if [ ! -f "$PIDFILE" ]; then
+        return 0
+    fi
+    local pid
+    pid="$(head -n 1 "$PIDFILE" | tr -d '[:space:]')"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill -TERM "$pid" 2>/dev/null || true
+        local i=0
+        while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 10 ]; do
+            sleep 1; i=$((i + 1))
+        done
+        kill -KILL "$pid" 2>/dev/null || true
+    fi
+    rm -f "$PIDFILE"
+    echo "[$(date '+%F %T')] stopped" >> "$LOGFILE"
+    return 0
+}
+
+case "$1" in
+    start)
+        start_app
+        ;;
+    stop)
+        stop_app
+        ;;
+    status)
+        if status_app; then
+            # 展示最近一次测速结果（可选）
+            [ -f "${DATADIR}/status.json" ] && cat "${DATADIR}/status.json" >> "$TRIM_TEMP_LOGFILE" 2>/dev/null || true
+            exit 0
+        fi
+        exit 3
+        ;;
+    *)
+        echo "Unknown command: $1" > "$TRIM_TEMP_LOGFILE" 2>/dev/null || true
+        exit 1
+        ;;
+esac

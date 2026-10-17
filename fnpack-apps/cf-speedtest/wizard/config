@@ -1,0 +1,30 @@
+[
+  {
+    "stepTitle": "应用设置",
+    "items": [
+      {
+        "type": "tips",
+        "field": "wizard_tips2",
+        "label": "说明",
+        "initValue": "修改后保存即可，应用会在下一轮按新配置执行。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_repo",
+        "label": "GitHub 仓库",
+        "initValue": "classmain/cf-speedtest-mine"
+      },
+      {
+        "type": "password",
+        "field": "wizard_token",
+        "label": "GitHub Token"
+      },
+      {
+        "type": "text",
+        "field": "wizard_interval",
+        "label": "测速间隔（小时）",
+        "initValue": "1"
+      }
+    ]
+  }
+]
