@@ -1,0 +1,46 @@
+# cf.yml · 版本号 v1.0 (2026-10-17 14:12 +08:00)
+# 改动记录：
+#   v1.0 每 6h + 手动触发：跑 speedtest.py 测 CF IP → 写 ipTop.html/ipTop.json → 有变化才 commit 回仓库。
+# 不依赖任何作者、不碰 Cloudflare 账号、不配任何 secret（只用到自动的 GITHUB_TOKEN）。
+# 说明：定时测速在 GitHub Actions 海外 runner 上执行，测的是「海外 → CF」延迟。
+name: "cf-sdtest-update"
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # 每 6 小时
+  workflow_dispatch:          # 手动触发
+  # 推代码时也自动跑一次，方便改 IP 池立即生效
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  speedtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Run speedtest"
+        # speedtest.py 默认读同目录 ip_pool.txt，写同目录 ipTop.html + ipTop.json
+        run: python speedtest.py
+
+      - name: "Commit back if changed"
+        run: |
+          git config user.name "cf-sdtest-bot"
+          git config user.email "cf-sdtest-bot@users.noreply.github.com"
+          git add ipTop.html ipTop.json
+          if git diff --staged --quiet; then
+            echo "no change, skip commit"
+          else
+            git commit -m "auto: update CF preferred IP (v$(grep -o '"version"[^,]*' ipTop.json | head -1 | tr -d ' ":'))"
+            git push
+          fi
