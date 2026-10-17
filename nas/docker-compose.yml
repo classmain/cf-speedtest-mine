@@ -1,0 +1,26 @@
+# ============================================================================
+# docker-compose.yml · 版本号 v1.4.0 (2026-10-17 19:28 +08:00)
+# 飞牛原生 Docker 跑「CF 优选 IP 测速」：用官方 python:3.12-slim，
+#   不 build 镜像、不推 registry，只挂载两个文件运行，最省。
+#
+# 目录要求（3 个文件放同一个目录）：
+#   ./nas_speedtest.py        自包含测速脚本（只读挂载进容器 /opt）
+#   ./nas_config.json         配置（repo / token / top_n），token 仅存飞牛本机，绝不进仓库
+#   ./docker-compose.yml      本文件
+#
+# 内存：每轮 python 跑完即退，平时仅 sh+sleep 常驻（极小）；单轮测速峰值 ~40MB。
+# ============================================================================
+services:
+  cf-sdtest:
+    image: python:3.12-slim
+    container_name: cf-sdtest
+    restart: unless-stopped
+    working_dir: /opt
+    volumes:
+      - ./nas_speedtest.py:/opt/nas_speedtest.py:ro
+      - ./nas_config.json:/opt/nas_config.json:ro
+    environment:
+      # 测速间隔（秒）。默认 3600=每小时一次；改频率就改这里，然后 docker compose up -d 重建。
+      - INTERVAL_SEC=3600
+    # 每轮跑一次脚本（输出进容器日志），然后睡 INTERVAL_SEC 再跑。
+    command: 'sh -c "while :; do python /opt/nas_speedtest.py; sleep ${INTERVAL_SEC}; done"'
