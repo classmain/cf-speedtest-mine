@@ -1,20 +1,20 @@
 {
   "version": "1.4.1",
-  "tested_at": "2026-10-24 04:55:41",
+  "tested_at": "2026-10-24 04:58:48",
   "count": 2,
   "top": [
     {
       "ip": "104.26.12.12",
-      "latency_ms": 70.12,
-      "download_mbps": 2.769,
+      "latency_ms": 66.58,
+      "download_mbps": 2.778,
       "sent": 4,
       "recv": 4,
       "loss": "0.00%"
     },
     {
       "ip": "190.93.247.1",
-      "latency_ms": 179.48,
-      "download_mbps": 1.357,
+      "latency_ms": 179.6,
+      "download_mbps": 1.201,
       "sent": 4,
       "recv": 4,
       "loss": "0.00%"
